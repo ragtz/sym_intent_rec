@@ -3,10 +3,7 @@
 from sym_intent_rec.world.utils import *
 from sym_intent_rec.msg import WorldState
 from hlpr_perception_msgs.msg import SegClusters
-from geometry_msgs.msg import Point, PointStamped
-from std_msgs.msg import String
 from tf import TransformListener
-import sensor_msgs.point_cloud2 as pc2 
 import numpy as np
 import rospy
 import sys
