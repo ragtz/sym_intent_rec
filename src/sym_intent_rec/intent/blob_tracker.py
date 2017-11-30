@@ -22,25 +22,19 @@ params.filterByCircularity = False
 params.filterByConvexity = False
 params.filterByInertia = False
 
-def get_blobs(bridge, msg_type=Image):
+def get_blobs(bridge, image=True):
     detector = cv2.SimpleBlobDetector(params)
 
     def f(msg):
-        img = bridge.imgmsg_to_cv2(msg, "mono8")
-        
+        img = bridge.imgmsg_to_cv2(msg, "mono8") 
         kp = detector.detect(img)
         
-        if msg_type is Image:
+        if image:
             img = cv2.drawKeypoints(img, kp, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-            msg = bridge.cv2_to_imgmsg(img, "bgr8")
+            return bridge.cv2_to_imgmsg(img, "bgr8")
         else:
-            # msg type for keypoint positions
-            pass
-
-        print [p.pt for p in kp]
+            return [p.pt for p in kp]
     
-        return msg
-
     return f
 
 if __name__ == "__main__":
