@@ -68,8 +68,7 @@ def publish_intent(msg, args):
     else:
         intent = 'none'
 
-    if not intent is None:
-        pub.publish(intent)
+    pub.publish(intent)
 
 if __name__ == "__main__":
     rospy.init_node('intent_recognition')
