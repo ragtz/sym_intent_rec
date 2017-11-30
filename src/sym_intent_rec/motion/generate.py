@@ -48,7 +48,7 @@ def open_gripper():
 def close_gripper():
     return {'type': 'gripper', 'msg': move_gripper(0.0)}
 
-def goto_legible(start, objs, g):
+def goto_legible(start, objs, g, n_wp=n_wp):
     objs = objs[:]
     for i, obj in enumerate(objs):
         objs[i] = obj + start['tf'][3:]
@@ -81,78 +81,82 @@ def goto_legible(start, objs, g):
 
     return {'type': 'arm', 'msg': joint_traj}, {'joints': list(joint_traj_arr[-1]), 'tf': list(traj[-1])}
 
-def goto_predictable(start, goal):
-    return goto_legible(start, [goal], 0)
+def goto_predictable(start, goal, n_wp=n_wp):
+    return goto_legible(start, [goal], 0, n_wp)
 
-    #cs = start['tf']
-    #q = quaternion_from_euler(cs[3], cs[4], cs[5])
-
-    #goal_pose = Pose()
-    #goal_pose.position.x = goal[0]
-    #goal_pose.position.y = goal[1]
-    #goal_pose.position.z = goal[2]
-    #goal_pose.orientation.x = q[0]
-    #goal_pose.orientation.y = q[1]
-    #goal_pose.orientation.z = q[2]
-    #goal_pose.orientation.w = q[3]
- 
-    #cart_planner.setDOFs(start['joints'])
-    #joint_traj_arr = cart_planner.plan('right_arm', [goal_pose], link='right_ee_link')
-    #joint_traj = array_to_joint_traj(joint_traj_arr)
-
-    #return {'type': 'arm', 'msg': joint_traj}, {'joints': joint_traj_arr[-1], 'tf': goal+cs}
-
-def pick_up(start, dy=0.3):
+def pickup(start, dy=0.3):
     cs = start['tf']
     return goto_predictable(start, (np.array(cs[:3]) + np.array([0,dy,0])).tolist())
 
-def back_up(start, dz=0.3):
+def backup(start, dz=0.3):
     cs = start['tf']
     return goto_predictable(start, (np.array(cs[:3]) - np.array([0,0,dz])).tolist())
 
-def goto(start, goal, objs=None):
+def pregrasp(start, obj, dz=0.05):
+    return goto_predictable(start, (np.array(obj) - np.array([0,0,dz])).tolist())
+
+def goto(start, goal, objs=None, n_wp=n_wp):
     if objs is None:
-        return goto_predictable(start, goal)
+        return goto_predictable(start, goal, n_wp)
     else:
-        return goto_legible(start, [goal]+objs, 0)
+        return goto_legible(start, [goal]+objs, 0, n_wp)
 
 def goto_joints(start, goal):
     joint_traj = array_to_joint_traj([start['joints'], goal])
     return {'type': 'arm', 'msg': joint_traj} 
 
-def generate_seq(start, objs, obj_bin, obj_pair, m_type='leg'):
-    h_obj, r_obj = obj_pair
-    o_objs = list(set(objs.keys()) - set(obj_pair))
+def generate_seq(start, obj, bins, goal_bin_idx, m_type='leg'):
+    a0, es = pregrasp(start, obj)
+    a1, es = goto(es, obj, n_wp=2)
+    a2 = close_gripper()
+    a3, es = pickup(es)
+    a4, es = backup(es)
+    a5 = goto_joints(es, start['joints'])
 
     if m_type == 'leg':
-        a0, es = goto(start, objs[r_obj], [objs[o] for o in o_objs])
+        a6, es = goto(start, bins[goal_bin_idx], bins)
     else:
-        a0, es = goto(start, objs[r_obj])
-    a1 = close_gripper()
-    a2, es = pick_up(es)
-    a3, es = goto(es, obj_bin)
-    a4 = open_gripper()
-    a5, es = back_up(es)
-    a6 = goto_joints(es, start['joints'])
+        a6, es = goto(start, bins[goal_bin_idx])
 
-    return [a0, a1, a2, a3, a4, a5, a6]
+    a7 = open_gripper()
+    a8, es = backup(es)
+    a9 = goto_joints(es, start['joints'])
+
+    return [a0, a1, a2, a3, a4, a5, a6, a7, a8, a9]
 
 if __name__ == "__main__":
     in_file = sys.argv[1]
     out_file = sys.argv[2]
+    m_type = sys.argv[3] # pred or leg
  
     world_file = yaml.load(open(in_file))
     start = world_file['start']
-    objs = world_file['objects']
-    obj_bin = world_file['bin']
-    manip_seqs = {'objects': objs.keys()}
+    left_objs = world_file['left_objs']
+    right_objs = world_file['right_objs']
+    left_bin = world_file['left_bin']
+    right_bin = world_file['right_bin']
+    manip_seqs = {'left_objs': [{'left_bin': [], 'right_bin': []} for i in range(len(left_objs))],
+                  'right_objs':[{'left_bin': [], 'right_bin': []} for i in range(len(right_objs))]}
 
     cart_planner = TrajOptCartesianPlanner(urdf, srdf, viz=False)
 
-    for obj_pair in combinations(objs.keys(), 2):
-        seq = generate_seq(start, objs, obj_bin, obj_pair, 'pred')   
-        manip_seqs[obj_pair] = seq
-        manip_seqs[(obj_pair[1], obj_pair[0])] = seq
+    for i, obj in enumerate(left_objs):
+        print '-------------------- left_obj', str(i), 'left_bin --------------------'
+        left_seq = generate_seq(start, obj, [left_bin, right_bin], 0, m_type)
+        print '-------------------- left_obj', str(i), 'right_bin --------------------' 
+        right_seq = generate_seq(start, obj, [left_bin, right_bin], 1, m_type)
+
+        manip_seqs['left_objs'][i]['left_bin'] = left_seq
+        manip_seqs['left_objs'][i]['right_bin'] = right_seq
+
+    for i, obj in enumerate(right_objs):
+        print '-------------------- right_obj', str(i), 'left_bin --------------------'
+        left_seq = generate_seq(start, obj, [left_bin, right_bin], 0, m_type)
+        print '-------------------- right_obj', str(i), 'right_bin --------------------'
+        right_seq = generate_seq(start, obj, [left_bin, right_bin], 1, m_type)
+
+        manip_seqs['right_objs'][i]['left_bin'] = left_seq
+        manip_seqs['right_objs'][i]['right_bin'] = right_seq
 
     pickle.dump(manip_seqs, open(out_file, 'w'))
 
