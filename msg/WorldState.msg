@@ -1,3 +1,3 @@
 Header header
-bool[] right_cups
-bool[] left_cups
+bool[] right
+bool[] left
