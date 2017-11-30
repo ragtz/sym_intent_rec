@@ -33,5 +33,7 @@ if __name__ == "__main__":
 
     state = rospy.wait_form_message(state_topic, WorldState, timeout=5)
     pub = rospy.Publisher(intent_topic, String, queue_size=10)
-    rospy.Subscriber(state_topic, publish_intent, (state, pub))
+    rospy.Subscriber(state_topic, WorldState, publish_intent, (state, pub))
+
+    rospy.spin()
 
