@@ -84,7 +84,7 @@ def goto_legible(start, objs, g, n_wp=n_wp):
 def goto_predictable(start, goal, n_wp=n_wp):
     return goto_legible(start, [goal], 0, n_wp)
 
-def pickup(start, dy=0.3):
+def pickup(start, dy=0.25):
     cs = start['tf']
     return goto_predictable(start, (np.array(cs[:3]) + np.array([0,dy,0])).tolist())
 
@@ -92,7 +92,11 @@ def backup(start, dz=0.3):
     cs = start['tf']
     return goto_predictable(start, (np.array(cs[:3]) - np.array([0,0,dz])).tolist())
 
-def pregrasp(start, obj, dz=0.05):
+def pickup_and_backup(start, dy=0.25, dz=0.3):
+    cs = start['tf']
+    return goto_predictable(start, (np.array(cs[:3]) + np.array([0,dy,-dz])).tolist())
+
+def pregrasp(start, obj, dz=0.15):
     return goto_predictable(start, (np.array(obj) - np.array([0,0,dz])).tolist())
 
 def goto(start, goal, objs=None, n_wp=n_wp):
@@ -107,10 +111,11 @@ def goto_joints(start, goal):
 
 def generate_seq(start, obj, bins, goal_bin_idx, m_type='leg'):
     a0, es = pregrasp(start, obj)
-    a1, es = goto(es, obj, n_wp=2)
+    a1, es = goto(es, obj, n_wp=5)
     a2 = close_gripper()
-    a3, es = pickup(es)
-    a4, es = backup(es)
+    #a3, es = pickup(es)
+    #a4, es = backup(es)
+    a3, es = pickup_and_backup(es, dz=0.4)
     a5 = goto_joints(es, start['joints'])
 
     if m_type == 'leg':
@@ -122,7 +127,7 @@ def generate_seq(start, obj, bins, goal_bin_idx, m_type='leg'):
     a8, es = backup(es)
     a9 = goto_joints(es, start['joints'])
 
-    return [a0, a1, a2, a3, a4, a5, a6, a7, a8, a9]
+    return [a0, a1, a2, a3, a5, a6, a7, a8, a9]
 
 if __name__ == "__main__":
     in_file = sys.argv[1]

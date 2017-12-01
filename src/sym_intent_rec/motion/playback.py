@@ -22,14 +22,12 @@ def move_arm(traj):
     client.send_goal(goal)
     client.wait_for_result()
 
-def move_gripper(cmd):
-    gripper_pub.publish(cmd)
+def move_gripper(pub, cmd):
+    pub.publish(cmd)
 
 def play_seq(msg, args):
     global running
     manip_seq, state, gripper_pub = args
-
-    print state
 
     intent = msg.data
     if not running and intent != 'none':
@@ -52,7 +50,7 @@ def play_seq(msg, args):
             if action['type'] == 'arm':
                 move_arm(action['msg'])
             else:
-                move_gripper(action['msg'])
+                move_gripper(gripper_pub, action['msg'])
                 time.sleep(3)
     else:
         running = False
