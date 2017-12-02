@@ -5,7 +5,7 @@ from std_msgs.msg import String
 import rospy
 import time
 
-n = 10
+n = 5
 
 def detect_change(s1, s2):
     return s1.left != s2.left, s1.right != s2.right
@@ -25,7 +25,7 @@ def publish_intent(msg, args):
     if intent != 'none':
         for i in range(n):
             pub.publish(intent)
-            time.sleep(0.2)
+            #time.sleep(0.2)
             
     state.left = msg.left
     state.right = msg.right

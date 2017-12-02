@@ -11,9 +11,9 @@ import numpy as np
 import rospy
 
 n = 1 # number of consecutive detections to classify as left/right
-d_thresh = 15 # min magnitude of motion to classify as left/right
-a_min = np.pi/3 # min angle from y-axis to classify as left/right
-a_max = 3*np.pi/4 # max angle from y-axis to classify as left/right
+d_thresh = 10 # min magnitude of motion to classify as left/right
+a_min = np.pi/6 # min angle from y-axis to classify as left/right
+a_max = np.pi/2 # max angle from y-axis to classify as left/right
 
 AND = lambda l: reduce(lambda x, y: x and y, l)
 HAS_NONE = lambda l: reduce(lambda x, y: x or y, map(lambda x: x is None, l))
@@ -42,7 +42,7 @@ def detect_motion(p, p_last):
         if mag > d_thresh:
             # was not moving up or down
             if ang > a_min and ang < a_max:
-                if motion[0] > 0:
+                if motion[0] < 0:
                     m_type = 'l'
                 else:
                     m_type = 'r'
@@ -71,9 +71,9 @@ def publish_intent(msg, args):
     pub.publish(intent)
 
 if __name__ == "__main__":
-    rospy.init_node('intent_recognition')
+    rospy.init_node('hand_intent_recognition')
 
-    image_topic = '/kinect2/qhd/image_color'
+    image_topic = '/kinect/qhd/image_color'
     intent_topic = '/intent'
 
     hand_pos = get_hand(h_range, s_range, v_range)

@@ -39,7 +39,7 @@ def color_filter(h_range, s_range, v_range, bridge):
 if __name__ == "__main__":
     rospy.init_node('color_filter')
 
-    pre_filter_topic = '/kinect2/qhd/image_color'
+    pre_filter_topic = '/kinect/qhd/image_color'
     post_filter_topic = '/binary_image'
 
     pub = rospy.Publisher(post_filter_topic, Image, queue_size=10)

@@ -11,7 +11,7 @@ import time
 import sys
 
 d_thresh = 0.06 # distance threshold
-t_thresh = 0.5 # time threshold
+t_thresh = 0.1 # time threshold
 
 def check_present(i, t, t_seen, p_check, p_curr):
     near = np.linalg.norm(np.array(p_check) - p_curr, axis=1) < d_thresh
