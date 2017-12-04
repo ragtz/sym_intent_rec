@@ -13,8 +13,10 @@ import rospy
 import pickle
 import time
 import sys
+import os
 
-n = 1
+n = 3 # number of conseutive intent inputs to trigger
+#n = 1 # number of conseutive intent inputs to trigger
 AND = lambda l: reduce(lambda x, y: x and y, list(l))
 
 def move_arm(traj):
@@ -61,12 +63,15 @@ if __name__ == "__main__":
     state_lock = Lock()
     intent_lock = Lock()
 
-    gripper_pub = rospy.Publisher('/vector/left_gripper/cmd', GripperCmd, queue_size=10)
+    gripper_pub = rospy.Publisher('/vector/right_gripper/cmd', GripperCmd, queue_size=10)
     rospy.Subscriber('/world_state', WorldState, update_state, (state, state_lock), queue_size=10)
     rospy.Subscriber('/intent', String, update_intent, (intent_history, intent_lock), queue_size=10)
 
     num_objs = sum(state.right) + sum(state.left)
 
+    # Say can start (e.g. "Start")
+    os.system("aplay ~/vector_ws/src/chime.wav")
+    
     while not rospy.is_shutdown() and num_objs > 0:
         intent = None
         with intent_lock:
@@ -93,6 +98,9 @@ if __name__ == "__main__":
 
             play_seq(manip_seq, gripper_pub, objs, obj_idx, bin_name)
             time.sleep(2)
+
+            # Say can continue (e.g. "Next")
+            os.system("aplay ~/vector_ws/src/Shutter-01.wav")
 
         with state_lock:
             num_objs = sum(state.right) + sum(state.left)

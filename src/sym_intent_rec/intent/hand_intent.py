@@ -10,10 +10,14 @@ from copy import deepcopy
 import numpy as np
 import rospy
 
-n = 1 # number of consecutive detections to classify as left/right
-d_thresh = 10 # min magnitude of motion to classify as left/right
-a_min = np.pi/6 # min angle from y-axis to classify as left/right
+n = 3 # number of consecutive detections to classify as left/right
+d_thresh = 8 # min magnitude of motion to classify as left/right
+#d_thresh = 10 # min magnitude of motion to classify as left/right
+a_min = np.pi/8 # min angle from y-axis to classify as left/right
 a_max = np.pi/2 # max angle from y-axis to classify as left/right
+
+#a_min = np.pi/6 # min angle from y-axis to classify as left/right
+#a_max = np.pi/2 # max angle from y-axis to classify as left/right
 
 AND = lambda l: reduce(lambda x, y: x and y, l)
 HAS_NONE = lambda l: reduce(lambda x, y: x or y, map(lambda x: x is None, l))

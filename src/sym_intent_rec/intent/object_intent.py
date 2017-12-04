@@ -31,7 +31,7 @@ def publish_intent(msg, args):
     state.right = msg.right
 
 if __name__ == "__main__":
-    rospy.init_node('intent_recognition')
+    rospy.init_node('object_intent_recognition')
     time.sleep(5)
 
     state_topic = '/world_state'
