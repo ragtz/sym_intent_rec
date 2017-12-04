@@ -63,6 +63,7 @@ if __name__ == "__main__":
     state_lock = Lock()
     intent_lock = Lock()
 
+    intent_pub = rospy.Publisher('/detected_intent', String, queue_size=10)
     gripper_pub = rospy.Publisher('/vector/right_gripper/cmd', GripperCmd, queue_size=10)
     rospy.Subscriber('/world_state', WorldState, update_state, (state, state_lock), queue_size=10)
     rospy.Subscriber('/intent', String, update_intent, (intent_history, intent_lock), queue_size=10)
@@ -78,8 +79,10 @@ if __name__ == "__main__":
             if len(intent_history) == n:
                 if AND(np.array(list(intent_history)) == 'left'):
                     intent = 'left'
+                    intent_pub.publish(intent)
                 elif AND(np.array(list(intent_history)) == 'right'):
                     intent = 'right'
+                    intent_pub.publish(intent)
 
         if not intent is None:
             if intent == 'left':
