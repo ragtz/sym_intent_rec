@@ -1,7 +1,7 @@
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 from trajectory_msgs.msg import JointTrajectory
 from vector_msgs.msg import GripperCmd
-from sym_intent_rec.msg import WorldState
+from sym_intent_rec.msg import WorldState, IntentStamped
 from std_msgs.msg import String
 from numpy.random import choice
 from collections import deque
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     state_lock = Lock()
     intent_lock = Lock()
 
-    intent_pub = rospy.Publisher('/detected_intent', String, queue_size=10)
+    intent_pub = rospy.Publisher('/detected_intent', IntentStamped, queue_size=10)
     gripper_pub = rospy.Publisher('/vector/right_gripper/cmd', GripperCmd, queue_size=10)
     rospy.Subscriber('/world_state', WorldState, update_state, (state, state_lock), queue_size=10)
     rospy.Subscriber('/intent', String, update_intent, (intent_history, intent_lock), queue_size=10)
@@ -79,12 +79,15 @@ if __name__ == "__main__":
             if len(intent_history) == n:
                 if AND(np.array(list(intent_history)) == 'left'):
                     intent = 'left'
-                    intent_pub.publish(intent)
                 elif AND(np.array(list(intent_history)) == 'right'):
                     intent = 'right'
-                    intent_pub.publish(intent)
 
         if not intent is None:
+            intent_msg = IntentStamped()
+            intent_msg.header.stamp = rospy.get_rostime()
+            intent_msg.intent = -1 if intent == 'left' else 1
+            intent_pub.publish(intent_msg)
+
             if intent == 'left':
                 print 'LEFT'
                 objs = 'right_objs'
