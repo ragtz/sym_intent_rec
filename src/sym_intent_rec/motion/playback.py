@@ -82,12 +82,17 @@ if __name__ == "__main__":
                 elif AND(np.array(list(intent_history)) == 'right'):
                     intent = 'right'
 
-        if not intent is None:
-            intent_msg = IntentStamped()
-            intent_msg.header.stamp = rospy.get_rostime()
-            intent_msg.intent = -1 if intent == 'left' else 1
-            intent_pub.publish(intent_msg)
+        intent_msg = IntentStamped()
+        intent_msg.header.stamp = rospy.get_rostime()
+        if intent is None:
+            intent_msg.intent = 0
+        elif intent == 'left':
+            intent_msg.intent = -1
+        else:
+            intent_msg.intent = 1 
+        intent_pub.publish(intent_msg)
 
+        if not intent is None:
             if intent == 'left':
                 print 'LEFT'
                 objs = 'right_objs'
