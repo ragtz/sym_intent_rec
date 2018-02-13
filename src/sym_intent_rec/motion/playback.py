@@ -18,6 +18,7 @@ import os
 n = 3 # number of conseutive intent inputs to trigger
 #n = 1 # number of conseutive intent inputs to trigger
 AND = lambda l: reduce(lambda x, y: x and y, list(l))
+num_turns = 5
 
 def move_arm(traj):
     client = actionlib.SimpleActionClient('/jaco_trajectory_controller/trajectory', FollowJointTrajectoryAction)
@@ -68,12 +69,11 @@ if __name__ == "__main__":
     rospy.Subscriber('/world_state', WorldState, update_state, (state, state_lock), queue_size=10)
     rospy.Subscriber('/intent', String, update_intent, (intent_history, intent_lock), queue_size=10)
 
-    num_objs = sum(state.right) + sum(state.left)
-
     # Say can start (e.g. "Start")
     os.system("aplay ~/vector_ws/src/chime.wav")
-    
-    while not rospy.is_shutdown() and num_objs > 0:
+   
+    turn = 0 
+    while not rospy.is_shutdown() and turn < num_turns:
         intent = None
         with intent_lock:
             if len(intent_history) == n:
@@ -98,16 +98,17 @@ if __name__ == "__main__":
                 objs = 'left_objs'
                 with state_lock:
                     objs_state = deepcopy(state.left)
-                    
-            obj_idx = choice([i for i, v in enumerate(objs_state) if v]) # random from available objects
-            bin_name = choice(['left_bin', 'right_bin']) # random bin
+           
+            available_objs = [i for i, v in enumerate(objs_state) if v]
+            if len(available_objs) > 0: 
+                obj_idx = choice(available_objs) # random from available objects
+                bin_name = choice(['left_bin', 'right_bin']) # random bin
 
-            play_seq(manip_seq, gripper_pub, objs, obj_idx, bin_name)
-            time.sleep(2)
+                play_seq(manip_seq, gripper_pub, objs, obj_idx, bin_name)
+                time.sleep(2)
 
-            # Say can continue (e.g. "Next")
-            os.system("aplay ~/vector_ws/src/Shutter-01.wav")
+                # Say can continue (e.g. "Next")
+                os.system("aplay ~/vector_ws/src/Shutter-01.wav")
 
-        with state_lock:
-            num_objs = sum(state.right) + sum(state.left)
-            
+                turn += 1
+ 
