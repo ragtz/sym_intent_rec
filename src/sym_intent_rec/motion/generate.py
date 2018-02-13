@@ -175,14 +175,6 @@ if __name__ == "__main__":
         print '-------------------- left_obj', str(i), 'right_bin --------------------' 
         right_seq = generate_seq(start, obj, [left_bin, right_bin], 1, m_type)
 
-        print "Left Seq:", i
-        for action in left_seq:
-            print type(action)
-        
-        print "Right Seq:", i
-        for action in right_seq:
-            print type(action)
-
         manip_seqs['left_objs'][i]['left_bin'] = left_seq
         manip_seqs['left_objs'][i]['right_bin'] = right_seq
 
@@ -191,14 +183,6 @@ if __name__ == "__main__":
         left_seq = generate_seq(start, obj, [left_bin, right_bin], 0, m_type)
         print '-------------------- right_obj', str(i), 'right_bin --------------------'
         right_seq = generate_seq(start, obj, [left_bin, right_bin], 1, m_type)
-
-        print "Left Seq:", i
-        for action in left_seq:
-            print type(action)
-        
-        print "Right Seq:", i
-        for action in right_seq:
-            print type(action)
 
         manip_seqs['right_objs'][i]['left_bin'] = left_seq
         manip_seqs['right_objs'][i]['right_bin'] = right_seq
