@@ -89,7 +89,7 @@ def pickup(start, dy=0.25):
     cs = start['tf']
     return goto_predictable(start, (np.array(cs[:3]) + np.array([0,dy,0])).tolist())
 
-def putdown(start, dy=0.25):
+def putdown(start, dy=0.20):
     cs = start['tf']
     return goto_predictable(start, (np.array(cs[:3]) - np.array([0,dy,0])).tolist())
 
@@ -104,7 +104,7 @@ def pickup_and_backup(start, dy=0.25, dz=0.3):
 def pregrasp(start, obj, dz=0.15):
     return goto_predictable(start, (np.array(obj) - np.array([0,0,dz])).tolist())
 
-def preplace(start, obj, dy=0.15):
+def preplace(start, obj, dy=0.20):
     return goto_predictable(start, (np.array(obj) + np.array([0,dy,0])).tolist())
 
 def goto(start, goal, objs=None, n_wp=n_wp):
@@ -118,14 +118,19 @@ def goto_joints(start, goal):
     return {'type': 'arm', 'msg': joint_traj} 
 
 def pour(start, goal_bin_idx, n_wp=2):
-    goal = start['joints']
+    full_pour = 2.967
+    step = full_pour/n_wp
+    wp = []
 
-    if goal_bin_idx == 0:
-        goal[-1] -= 2.967
-    else:
-        goal[-1] += 2.967    
+    for i in range(n_wp):
+        g = deepcopy(start['joints'])
+        if goal_bin_idx == 0:
+            g[-1] -= step
+        else:
+            g[-1] += step
+        wp.append(g)
 
-    joint_traj = array_to_joint_traj([start['joints'], goal, start['joints']])
+    joint_traj = array_to_joint_traj([start['joints']] + wp)
     return {'type': 'arm', 'msg': joint_traj}, start
 
 def generate_seq(start, obj, bins, goal_bin_idx, m_type='leg'):
