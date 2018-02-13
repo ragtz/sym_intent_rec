@@ -135,7 +135,7 @@ def pour(start, goal_bin_idx, n_wp=2):
 
     wp.extend(wp_rev)
 
-    joint_traj = array_to_joint_traj([start['joints']] + wp + [start['joint']])
+    joint_traj = array_to_joint_traj([start['joints']] + wp + [start['joints']])
     return {'type': 'arm', 'msg': joint_traj}, start
 
 def generate_seq(start, obj, bins, goal_bin_idx, m_type='leg'):
