@@ -23,7 +23,7 @@ params.filterByConvexity = False
 params.filterByInertia = False
 
 def get_blobs(bridge, image=True):
-    detector = cv2.SimpleBlobDetector(params)
+    detector = cv2.SimpleBlobDetector_create(params)
 
     def f(msg):
         img = bridge.imgmsg_to_cv2(msg, "mono8") 
