@@ -1,60 +1,78 @@
 #!/usr/bin/env python
 
-from sym_intent_rec.world.utils import *
+from cv_bridge import CvBridge, CvBridgeError
+from sym_intent_rec.intent.color_filter import *
+from sym_intent_rec.intent.blob_tracker import *
 from sym_intent_rec.msg import WorldState
-from hlpr_perception_msgs.msg import SegClusters
-from tf import TransformListener
+from sensor_msgs.msg import Image
 import numpy as np
 import rospy
 import yaml
-import time
 import sys
 
-d_thresh = 0.06 # distance threshold
-t_thresh = 0.1 # time threshold
+h_range = (150, 170)
+s_range = (155, 255)
+v_range = None
 
-def check_present(i, t, t_seen, p_check, p_curr):
-    near = np.linalg.norm(np.array(p_check) - p_curr, axis=1) < d_thresh
-    seen = reduce(lambda x, y: x or y, near)
+d_thresh = 30 # distance threshold
 
-    if not seen:
-        present = t - t_seen[i] < t_thresh
+def get_cups(h_range, s_range, v_range, image=False):
+    bridge = CvBridge()
+    f_filter = color_filter(h_range, s_range, v_range, bridge)
+    f_blobs = get_blobs(bridge, image=image)
+
+    def f(msg):
+        return f_blobs(f_filter(msg))
+
+    return f
+
+def check_present(i, p_check, p_curr):
+    if len(p_curr) > 0:
+        near = np.linalg.norm(np.array(p_check) - p_curr, axis=1) < d_thresh
+        present = reduce(lambda x, y: x or y, near)
+        return present
     else:
-        present = True
-        t_seen[i] = t
+        return False
 
-    return present
+def publish_blobs(msg, args):
+    cups_pos, pub = args
+    pub.publish(cups_pos(msg))
 
 def publish_state(msg, args):
-    pub, tf, p_check, t_seen = args
-    t = msg.header.stamp.to_sec()
+    cups_pos, p_check, pub = args
     state = WorldState()
 
-    p_curr = []
-    for pc in msg.clusters:
-        p = get_avg_position(pc, tf)
-        p_curr.append(p)
+    p_curr = cups_pos(msg)
 
     for i, p in enumerate(p_check['right']):
-        state.right.append(check_present(i, t, t_seen['right'], p, p_curr))
+        state.right.append(check_present(i, p, p_curr))
     
     for i, p in enumerate(p_check['left']):
-        state.left.append(check_present(i, t, t_seen['left'], p, p_curr))
+        state.left.append(check_present(i, p, p_curr))
 
     pub.publish(state)
 
 if __name__ == "__main__":
     p_check = yaml.load(open(sys.argv[1]))
-    t_seen = {'left': len(p_check['left'])*[-float('inf')],
-              'right': len(p_check['right'])*[-float('inf')]}
+    if len(sys.argv) > 2:
+        view_blobs = bool(sys.argv[2])
+    else:
+        view_blobs = False
 
     rospy.init_node('extract_state')
 
-    tf = TransformListener(True, rospy.Duration(50))
-    time.sleep(5)
+    image_topic = '/kinect/qhd/image_color'
+    state_topic = '/world_state'
+    blobs_topic = '/cup_blobs'
 
-    pub = rospy.Publisher('/world_state', WorldState, queue_size=10)
-    rospy.Subscriber('/beliefs/clusters', SegClusters, publish_state, (pub, tf, p_check, t_seen))
+    cups_pos = get_cups(h_range, s_range, v_range, view_blobs)
+
+    if view_blobs:
+        pub = rospy.Publisher(blobs_topic, Image, queue_size=10)
+        rospy.Subscriber(image_topic, Image, publish_blobs, (cups_pos, pub))
+    else:
+        pub = rospy.Publisher(state_topic, WorldState, queue_size=10)
+        rospy.Subscriber(image_topic, Image, publish_state, (cups_pos, p_check, pub))
 
     rospy.spin()
 
