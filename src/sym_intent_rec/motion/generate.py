@@ -117,19 +117,16 @@ def goto_joints(start, goal):
     joint_traj = array_to_joint_traj([start['joints'], goal])
     return {'type': 'arm', 'msg': joint_traj} 
 
-def pour(start, goal_bin_idx, n_wp=5):
-    goal = deepcopy(start['tf'])
+def pour(start, goal_bin_idx, n_wp=2):
+    goal = start['joints']
 
     if goal_bin_idx == 0:
-        goal[3] += 2.356
+        goal[-1] += 2.356
     else:
-        goal[3] -= 2.356
+        goal[-1] -= 2.356    
 
-    a0, es0 = goto(start, goal, n_wp=n_wp)
-    a1, es1 = goto(es0, start['tf'], n_wp=n_wp)
-    a0['msg'].points.extend(a1['msg'].points)
-
-    return a0, es1
+    joint_traj = array_to_joint_traj([start['joints'], goal, start['joints']])
+    return {'type': 'arm', 'msg': joint_traj}, start
 
 def generate_seq(start, obj, bins, goal_bin_idx, m_type='leg'):
     a0, es = pregrasp(start, obj)
@@ -148,7 +145,7 @@ def generate_seq(start, obj, bins, goal_bin_idx, m_type='leg'):
     a7, es = pour(es, goal_bin_idx)
     a8, es = backup(es)
     a9 = goto_joints(es, start['joints'])
-    a10 = preplace(es, obj)
+    a10, es = preplace(start, obj)
     a11, es = putdown(start)
     a12 = open_gripper()
     a13, es = pickup_and_backup(es, dz=0.4)
@@ -178,6 +175,14 @@ if __name__ == "__main__":
         print '-------------------- left_obj', str(i), 'right_bin --------------------' 
         right_seq = generate_seq(start, obj, [left_bin, right_bin], 1, m_type)
 
+        print "Left Seq:", i
+        for action in left_seq:
+            print type(action)
+        
+        print "Right Seq:", i
+        for action in right_seq:
+            print type(action)
+
         manip_seqs['left_objs'][i]['left_bin'] = left_seq
         manip_seqs['left_objs'][i]['right_bin'] = right_seq
 
@@ -186,6 +191,14 @@ if __name__ == "__main__":
         left_seq = generate_seq(start, obj, [left_bin, right_bin], 0, m_type)
         print '-------------------- right_obj', str(i), 'right_bin --------------------'
         right_seq = generate_seq(start, obj, [left_bin, right_bin], 1, m_type)
+
+        print "Left Seq:", i
+        for action in left_seq:
+            print type(action)
+        
+        print "Right Seq:", i
+        for action in right_seq:
+            print type(action)
 
         manip_seqs['right_objs'][i]['left_bin'] = left_seq
         manip_seqs['right_objs'][i]['right_bin'] = right_seq
