@@ -118,24 +118,14 @@ def goto_joints(start, goal):
     return {'type': 'arm', 'msg': joint_traj} 
 
 def pour(start, goal_bin_idx, n_wp=2):
-    full_pour = 2.967
-    step = full_pour/n_wp
-    wp = []
+    goal = deepcopy(start['joints'])
 
-    for i in range(n_wp):
-        g = deepcopy(start['joints'])
-        if goal_bin_idx == 0:
-            g[-1] -= step
-        else:
-            g[-1] += step
-        wp.append(g)
+    if goal_bin_idx == 0:
+        goal[-1] -= 4.712
+    else:
+        goal[-1] += 4.712
 
-    wp_rev = deepcopy(wp)[:-1]
-    wp_rev.reverse()
-
-    wp.extend(wp_rev)
-
-    joint_traj = array_to_joint_traj([start['joints']] + wp + [start['joints']])
+    joint_traj = array_to_joint_traj([start['joints'], goal, start['joints']])
     return {'type': 'arm', 'msg': joint_traj}, start
 
 def generate_seq(start, obj, bins, goal_bin_idx, m_type='leg'):
