@@ -104,7 +104,7 @@ def pickup_and_backup(start, dy=0.25, dz=0.3):
 def pregrasp(start, obj, dz=0.15):
     return goto_predictable(start, (np.array(obj) - np.array([0,0,dz])).tolist())
 
-def preplace(start, obj, dy=0.25):
+def preplace(start, obj, dy=0.15):
     return goto_predictable(start, (np.array(obj) + np.array([0,dy,0])).tolist())
 
 def goto(start, goal, objs=None, n_wp=n_wp):
@@ -121,9 +121,9 @@ def pour(start, goal_bin_idx, n_wp=2):
     goal = start['joints']
 
     if goal_bin_idx == 0:
-        goal[-1] += 2.356
+        goal[-1] -= 2.967
     else:
-        goal[-1] -= 2.356    
+        goal[-1] += 2.967    
 
     joint_traj = array_to_joint_traj([start['joints'], goal, start['joints']])
     return {'type': 'arm', 'msg': joint_traj}, start
@@ -146,7 +146,7 @@ def generate_seq(start, obj, bins, goal_bin_idx, m_type='leg'):
     a8, es = backup(es)
     a9 = goto_joints(es, start['joints'])
     a10, es = preplace(start, obj)
-    a11, es = putdown(start)
+    a11, es = putdown(es)
     a12 = open_gripper()
     a13, es = pickup_and_backup(es, dz=0.4)
     a14 = goto_joints(es, start['joints'])
