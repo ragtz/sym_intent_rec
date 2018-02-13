@@ -6,6 +6,7 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from geometry_msgs.msg import Pose
 from vector_msgs.msg import GripperCmd
 from itertools import combinations
+from copy import deepcopy
 import numpy as np
 import pickle
 import yaml
@@ -88,6 +89,10 @@ def pickup(start, dy=0.25):
     cs = start['tf']
     return goto_predictable(start, (np.array(cs[:3]) + np.array([0,dy,0])).tolist())
 
+def putdown(start, dy=0.25):
+    cs = start['tf']
+    return goto_predictable(start, (np.array(cs[:3]) - np.array([0,dy,0])).tolist())
+
 def backup(start, dz=0.3):
     cs = start['tf']
     return goto_predictable(start, (np.array(cs[:3]) - np.array([0,0,dz])).tolist())
@@ -99,6 +104,9 @@ def pickup_and_backup(start, dy=0.25, dz=0.3):
 def pregrasp(start, obj, dz=0.15):
     return goto_predictable(start, (np.array(obj) - np.array([0,0,dz])).tolist())
 
+def preplace(start, obj, dy=0.25):
+    return goto_predictable(start, (np.array(obj) + np.array([0,dy,0])).tolist())
+
 def goto(start, goal, objs=None, n_wp=n_wp):
     if objs is None:
         return goto_predictable(start, goal, n_wp)
@@ -108,6 +116,20 @@ def goto(start, goal, objs=None, n_wp=n_wp):
 def goto_joints(start, goal):
     joint_traj = array_to_joint_traj([start['joints'], goal])
     return {'type': 'arm', 'msg': joint_traj} 
+
+def pour(start, goal_bin_idx, n_wp=5):
+    goal = deepcopy(start['tf'])
+
+    if goal_bin_idx == 0:
+        goal[3] += 2.356
+    else:
+        goal[3] -= 2.356
+
+    a0, es0 = goto(start, goal, n_wp=n_wp)
+    a1, es1 = goto(es0, start['tf'], n_wp=n_wp)
+    a0['msg'].points.extend(a1['msg'].points)
+
+    return a0, es1
 
 def generate_seq(start, obj, bins, goal_bin_idx, m_type='leg'):
     a0, es = pregrasp(start, obj)
@@ -123,11 +145,16 @@ def generate_seq(start, obj, bins, goal_bin_idx, m_type='leg'):
     else:
         a6, es = goto(start, bins[goal_bin_idx])
 
-    a7 = open_gripper()
+    a7, es = pour(es, goal_bin_idx)
     a8, es = backup(es)
     a9 = goto_joints(es, start['joints'])
+    a10 = preplace(es, obj)
+    a11, es = putdown(start)
+    a12 = open_gripper()
+    a13, es = pickup_and_backup(es, dz=0.4)
+    a14 = goto_joints(es, start['joints'])
 
-    return [a0, a1, a2, a3, a5, a6, a7, a8, a9]
+    return [a0, a1, a2, a3, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14]
 
 if __name__ == "__main__":
     in_file = sys.argv[1]
