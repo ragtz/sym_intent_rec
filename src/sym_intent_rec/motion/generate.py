@@ -118,12 +118,13 @@ def goto_joints(start, goal):
     return {'type': 'arm', 'msg': joint_traj} 
 
 def pour(start, goal_bin_idx, n_wp=2):
+    full_pour = np.pi
     goal = deepcopy(start['joints'])
 
     if goal_bin_idx == 0:
-        goal[-1] -= 4.712
+        goal[-1] -= full_pour
     else:
-        goal[-1] += 4.712
+        goal[-1] += full_pour
 
     joint_traj = array_to_joint_traj([start['joints'], goal, start['joints']])
     return {'type': 'arm', 'msg': joint_traj}, start
