@@ -89,7 +89,7 @@ def pickup(start, dy=0.25):
     cs = start['tf']
     return goto_predictable(start, (np.array(cs[:3]) + np.array([0,dy,0])).tolist())
 
-def putdown(start, dy=0.20):
+def putdown(start, dy=0.25):
     cs = start['tf']
     return goto_predictable(start, (np.array(cs[:3]) - np.array([0,dy,0])).tolist())
 
@@ -104,7 +104,7 @@ def pickup_and_backup(start, dy=0.25, dz=0.3):
 def pregrasp(start, obj, dz=0.15):
     return goto_predictable(start, (np.array(obj) - np.array([0,0,dz])).tolist())
 
-def preplace(start, obj, dy=0.20):
+def preplace(start, obj, dy=0.25):
     return goto_predictable(start, (np.array(obj) + np.array([0,dy,0])).tolist())
 
 def goto(start, goal, objs=None, n_wp=n_wp):
