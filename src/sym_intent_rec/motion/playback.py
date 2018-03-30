@@ -18,9 +18,14 @@ import os
 n = 3 # number of conseutive intent inputs to trigger
 #n = 1 # number of conseutive intent inputs to trigger
 AND = lambda l: reduce(lambda x, y: x and y, list(l))
-num_turns = 5
+num_turns = 4
 
-def move_arm(traj):
+def move_arm(traj, time_scale=1.0):
+    #rospy.set_param('/jaco_trajectory_controller/slowdown_factor', float(time_scale))
+    #rospy.set_param('/jaco_trajectory_controller/slowdown_factor', 2)
+    #print '-----------------------------'
+    #print rospy.get_param('/jaco_trajectory_controller/slowdown_factor')
+    #print '-----------------------------'
     client = actionlib.SimpleActionClient('/jaco_trajectory_controller/trajectory', FollowJointTrajectoryAction)
     client.wait_for_server()
 
@@ -34,13 +39,22 @@ def move_gripper(pub, cmd):
     pub.publish(cmd)
 
 def play_seq(manip_seq, gripper_pub, objs, obj_idx, bin_name): 
+    times = []
     seq = manip_seq[objs][obj_idx][bin_name]
-    for action in seq:
+    for i, action in enumerate(seq):
+        start = rospy.get_time()
         if action['type'] == 'arm':
-            move_arm(action['msg'])
+            if 'time_scale' in action.keys():
+                move_arm(action['msg'], action['time_scale'])
+            else:
+                move_arm(action['msg'])
         else:
             move_gripper(gripper_pub, action['msg'])
             time.sleep(3)
+        end = rospy.get_time()
+        times.append(end - start)
+        print i, times[i]
+    return times
 
 def update_intent(msg, args):
     intent_history, lock = args
@@ -70,7 +84,7 @@ if __name__ == "__main__":
     rospy.Subscriber('/intent', String, update_intent, (intent_history, intent_lock), queue_size=10)
 
     # Say can start (e.g. "Start")
-    os.system("aplay ~/vector_ws/src/chime.wav")
+    os.system("aplay ~/catkin_ws/src/chime.wav")
    
     turn = 0 
     while not rospy.is_shutdown() and turn < num_turns:
@@ -108,7 +122,8 @@ if __name__ == "__main__":
                 time.sleep(2)
 
                 # Say can continue (e.g. "Next")
-                os.system("aplay ~/vector_ws/src/Shutter-01.wav")
+		#os.system("aplay ~/vector_ws/src/Shutter-01.wav")
+                os.system("aplay ~/catkin_ws/src/Shutter-01.wav")
 
                 turn += 1
  

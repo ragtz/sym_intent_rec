@@ -1,4 +1,4 @@
 #!/bin/sh
 
-rosbag record /detected_intent /kinect/qhd/image_color -o $1
+rosbag record /jaco_trajectory_controller/trajectory/goal /vector/right_gripper/cmd /detected_intent /kinect/qhd/image_color/compressed -o $1
 

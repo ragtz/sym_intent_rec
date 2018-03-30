@@ -7,7 +7,9 @@ import rospy
 import cv2
 
 h_range = (80, 120)
-s_range = (180, 255)
+s_range = (140, 255)
+#s_range = (150, 255)
+#s_range = (180, 255)
 v_range = None
 
 def process_range(r):
